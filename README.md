@@ -126,6 +126,44 @@ pip install --upgrade openai>=1.12.0
 3. Set up environment variables (see Configuration below)
 4. Run: `streamlit run app.py`
 
+## 🌐 Cloud Deployment Snapshot (2025-09-24)
+
+The application is currently hosted on AWS behind CloudFront: **https://d1kmcm08kwn7a6.cloudfront.net**. The stack name is `clinical-analyzer-minimal` in `us-east-1`, and it provisions a `t3a.micro` EC2 instance (latest public IP: `18.206.218.43`) plus an IAM role with access to the artifacts bucket `s3://clinical-analyser-artifacts-057669459602`.
+
+Deploy/update workflow:
+
+```bash
+# 1) Build the artifact bundle (excludes secrets)
+mkdir -p dist
+zip -r dist/clinical-analyser.zip . \
+  -x 'dist/*' '.git/*' '*.pyc' '__pycache__/*' 'env' 'env/*' 'key.json' \
+     'deploy/keys/*' 'git_commit/PRIVATE_GITHUB_PAT.txt'
+
+# 2) Upload the bundle
+aws s3 cp dist/clinical-analyser.zip \
+  s3://clinical-analyser-artifacts-057669459602/artifacts/clinical-analyser.zip
+
+# 3) Create/Update the CloudFormation stack
+aws cloudformation deploy \
+  --stack-name clinical-analyzer-minimal \
+  --template-file deploy/infrastructure/clinical-analyzer-minimal.yaml \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --parameter-overrides \
+    KeyPairName=smartbuild-20250824180036 \
+    VpcId=vpc-0bc30631a28503c95 \
+    PublicSubnetId=subnet-0bee8301325571ebf \
+    ArtifactBucket=clinical-analyser-artifacts-057669459602 \
+    ArtifactObjectKey=artifacts/clinical-analyser.zip \
+    InstanceType=t3a.micro
+
+# 4) Inspect current endpoints / IP
+aws cloudformation describe-stacks \
+  --stack-name clinical-analyzer-minimal \
+  --query 'Stacks[0].Outputs'
+```
+
+After the stack converges, replace the dummy values in `/opt/clinical-analyzer/.env` on the EC2 host (`ssh -i smartbuild-20250824180036.pem ubuntu@18.206.218.43`) with live API keys and restart the `clinical-analyzer` service. To remove infra, delete the stack and purge the S3 object/bucket.
+
 ## ⚙️ Configuration
 
 ### 1. OpenAI API Setup
