@@ -1,0 +1,228 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Clinical Analyzer - Minimal EC2 + CloudFront deployment'
+
+Parameters:
+  KeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 Key Pair for SSH access.
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC where the instance will run (use default VPC for quickest setup).
+
+  PublicSubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: Public subnet in the chosen VPC.
+
+  ArtifactBucket:
+    Type: String
+    Description: S3 bucket that stores the application bundle.
+
+  ArtifactObjectKey:
+    Type: String
+    Description: Object key for the application zip inside the artifact bucket.
+
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    AllowedValues:
+      - t3.micro
+      - t3.small
+      - t3a.micro
+      - t3a.small
+    Description: Small burstable instance types recommended for cost control.
+
+Mappings:
+  RegionMap:
+    us-east-1:
+      AMI: ami-05ec1e5f7cfe5ef59
+    us-east-2:
+      AMI: ami-08c40ec9ead489470
+    us-west-2:
+      AMI: ami-0978f103f27eb8c6a
+
+Resources:
+  ClinicalAnalyzerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH and HTTP for Clinical Analyzer
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: ClinicalAnalyzer-SG
+
+  ClinicalAnalyzerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Path: '/'
+      Policies:
+        - PolicyName: ArtifactReadAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                Resource: !Sub 'arn:aws:s3:::${ArtifactBucket}/${ArtifactObjectKey}'
+
+  ClinicalAnalyzerInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref ClinicalAnalyzerRole
+
+  ClinicalAnalyzerInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyPairName
+      SubnetId: !Ref PublicSubnetId
+      SecurityGroupIds:
+        - !Ref ClinicalAnalyzerSecurityGroup
+      IamInstanceProfile: !Ref ClinicalAnalyzerInstanceProfile
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 20
+            VolumeType: gp3
+            DeleteOnTermination: true
+      Tags:
+        - Key: Name
+          Value: ClinicalAnalyzer-EC2
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -euxo pipefail
+          apt-get update
+          apt-get install -y python3 python3-venv python3-pip python3-dev build-essential \
+            nginx awscli unzip git libgl1 tesseract-ocr libtesseract-dev
+          
+          rm -rf /opt/clinical-analyzer
+          mkdir -p /opt/clinical-analyzer
+          chown ubuntu:ubuntu /opt/clinical-analyzer
+          aws s3 cp s3://${ArtifactBucket}/${ArtifactObjectKey} /tmp/clinical-analyzer.zip
+          unzip -q /tmp/clinical-analyzer.zip -d /opt/clinical-analyzer
+          python3 -m venv /opt/clinical-analyzer/venv
+          /opt/clinical-analyzer/venv/bin/pip install --upgrade pip
+          /opt/clinical-analyzer/venv/bin/pip install -r /opt/clinical-analyzer/requirements.txt
+          chown -R ubuntu:ubuntu /opt/clinical-analyzer
+          
+          cat > /opt/clinical-analyzer/.env <<'EOF'
+          OPENAI_API_KEY=dummy-placeholder
+          OPENAI_MODEL=gpt-3.5-turbo
+          DATABASE_NAME=clinical_analyzer.db
+          EOF
+          chown ubuntu:ubuntu /opt/clinical-analyzer/.env
+          
+          cat > /etc/systemd/system/clinical-analyzer.service <<'SERVICE'
+          [Unit]
+          Description=Clinical Analyzer Streamlit App
+          After=network.target
+          
+          [Service]
+          Type=simple
+          User=ubuntu
+          WorkingDirectory=/opt/clinical-analyzer
+          Environment=PYTHONUNBUFFERED=1
+          ExecStart=/opt/clinical-analyzer/venv/bin/streamlit run app.py --server.port 8501 --server.address 127.0.0.1
+          Restart=always
+          RestartSec=5
+          
+          [Install]
+          WantedBy=multi-user.target
+          SERVICE
+          
+          systemctl daemon-reload
+          systemctl enable clinical-analyzer
+          systemctl start clinical-analyzer
+          
+          cat > /etc/nginx/sites-available/default <<'NGINX'
+          server {
+              listen 80 default_server;
+              listen [::]:80 default_server;
+              
+              server_name _;
+              
+              location / {
+                  proxy_pass http://127.0.0.1:8501;
+                  proxy_http_version 1.1;
+                  proxy_set_header Upgrade $http_upgrade;
+                  proxy_set_header Connection "upgrade";
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+                  proxy_read_timeout 86400;
+                  proxy_buffering off;
+              }
+          }
+          NGINX
+          
+          systemctl restart nginx
+
+  ClinicalAnalyzerDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: Clinical Analyzer distribution
+        Enabled: true
+        Origins:
+          - Id: ClinicalAnalyzerOrigin
+            DomainName: !GetAtt ClinicalAnalyzerInstance.PublicDnsName
+            CustomOriginConfig:
+              HTTPPort: 80
+              OriginProtocolPolicy: http-only
+        DefaultCacheBehavior:
+          TargetOriginId: ClinicalAnalyzerOrigin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+            - PUT
+            - POST
+            - PATCH
+            - DELETE
+          ForwardedValues:
+            QueryString: true
+            Headers:
+              - '*'
+            Cookies:
+              Forward: all
+          MinTTL: 0
+          DefaultTTL: 0
+          MaxTTL: 0
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+
+Outputs:
+  CloudFrontURL:
+    Description: CloudFront endpoint for the application.
+    Value: !Sub 'https://${ClinicalAnalyzerDistribution.DomainName}'
+
+  InstancePublicIP:
+    Description: Public IP of the EC2 instance.
+    Value: !GetAtt ClinicalAnalyzerInstance.PublicIp
+
+  SSHCommand:
+    Description: SSH command using the provided key pair.
+    Value: !Sub 'ssh -i ${KeyPairName}.pem ubuntu@${ClinicalAnalyzerInstance.PublicIp}'

@@ -1,0 +1,20 @@
+[Unit]
+Description=SmartBuild Job Queue Monitor
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/smartbuild
+ExecStart=/usr/bin/python3 /opt/smartbuild/job_queue_monitor.py
+Restart=always
+RestartSec=10
+StandardOutput=append:/opt/smartbuild/logs/job_queue_monitor.log
+StandardError=append:/opt/smartbuild/logs/job_queue_monitor_error.log
+
+# Environment variables
+Environment="PYTHONUNBUFFERED=1"
+Environment="PYTHONPATH=/opt/smartbuild"
+
+[Install]
+WantedBy=multi-user.target

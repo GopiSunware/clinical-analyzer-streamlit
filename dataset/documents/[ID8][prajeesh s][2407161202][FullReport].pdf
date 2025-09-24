@@ -1,0 +1,888 @@
+%PDF-1.3
+%·¾­ª
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [ 4 0 R 9 0 R 12 0 R ]
+/Count 3
+>>
+endobj
+3 0 obj
+<<
+/Producer (Haru Free PDF Library 2.4.0dev)
+>>
+endobj
+4 0 obj
+<<
+/Type /Page
+/MediaBox [ 0 0 595 841 ]
+/Contents 5 0 R
+/Resources <<
+/ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
+/Font <<
+/F1 7 0 R
+/F2 8 0 R
+>>
+>>
+/Parent 2 0 R
+>>
+endobj
+5 0 obj
+<<
+/Length 6 0 R
+>>
+stream
+0.5 w
+25 25 545 791 re
+S
+/F1 24 Tf
+BT
+/F2 14 Tf
+353.34399 791 Td
+(Vyli Health) Tj
+/F1 12 Tf
+0 -15 Td
+(Bangalore) Tj
+0 -15 Td
+(gitsparcolife@vyli.health) Tj
+0 -15 Td
+(www.vyli.health) Tj
+/F2 14 Tf
+-174.172 -35 Td
+(Stress Response Analysis Report) Tj
+/F2 10 Tf
+/F1 12 Tf
+-100.828 -30 Td
+(Name:) Tj
+33 0 Td
+(prajeesh s) Tj
+/F1 12 Tf
+127 0 Td
+(Age:) Tj
+28 0 Td
+(26) Tj
+/F1 12 Tf
+132 0 Td
+(Sex:) Tj
+23 0 Td
+(MALE) Tj
+/F1 12 Tf
+-343 -30 Td
+(Weight\050in Kgs\051:) Tj
+80 0 Td
+(70) Tj
+/F1 12 Tf
+80 0 Td
+(Height\050in Cms\051:) Tj
+80 0 Td
+(175) Tj
+/F1 12 Tf
+80 0 Td
+(Data Collected on:) Tj
+95 0 Td
+(2024-07-16) Tj
+/F1 11.5 Tf
+12.834 TL
+-466.34399 -18.49304 Td
+0.12199 Tc
+(Thank you for participating in the Stress response analysis test conducted by Vyli Health.Your overall Stress) '
+0 Tc
+(response score based on Heart Rate Variability \050HRV\051 and Blood Pressure \050BP\051 is noted below.) '
+243 -61.83899 Td
+(Reference Range:) Tj
+/F2 12 Tf
+-141.65601 26 Td
+(Stress Response Score:) Tj
+185 -3 Td
+(50) Tj
+/F2 10 Tf
+-286.34399 -347 Td
+(Opinion\057Advice :) Tj
+/F1 10 Tf
+/F1 12 Tf
+/F2 10 Tf
+0 -130 Td
+(Disclaimer:) Tj
+/F1 9 Tf
+0 -0.248 Td
+0.13089 Tc
+(The report is not intended or implied to be an alternative to medical advice from qualified professional. Always consult an appropriate medical) '
+0 Tc
+(professional.) '
+/F2 10 Tf
+0 -14.084 Td
+(About STREME:) Tj
+/F1 9 Tf
+0 -1.248 Td
+0 Tc
+(This test was conducted using STREME, an advanced Stress Response Measurement tool from Streben Healthcare Private Limited.) '
+/F1 12 Tf
+/F1 11 Tf
+248 490.082 Td
+(Range) Tj
+60 0 Td
+(Response) Tj
+/F1 11 Tf
+-60 -20 Td
+(0 to 25) Tj
+60 0 Td
+(Low Stress Response) Tj
+/F1 11 Tf
+-60 -20 Td
+(26 to 50) Tj
+60 0 Td
+(Mild Stress Response) Tj
+/F1 11 Tf
+-60 -20 Td
+(51 to 75) Tj
+60 0 Td
+(Moderate Stress Response) Tj
+/F1 11 Tf
+-60 -20 Td
+(76 to 100) Tj
+60 0 Td
+(High Stress Response) Tj
+/F1 8 Tf
+-295 -127 Td
+(0) Tj
+/F1 8 Tf
+0 20 Td
+(0.5) Tj
+/F1 8 Tf
+0 20 Td
+(1) Tj
+/F1 8 Tf
+0 20 Td
+(1.5) Tj
+/F1 8 Tf
+0 20 Td
+(2) Tj
+/F1 8 Tf
+0 -100 Td
+(-0.5) Tj
+/F1 8 Tf
+0 -20 Td
+(-1) Tj
+/F1 8 Tf
+0 -20 Td
+(-1.5) Tj
+/F1 8 Tf
+0 -20 Td
+(-2) Tj
+/F1 6 Tf
+35 180 Td
+(M.RR) Tj
+/F1 6 Tf
+25 0 Td
+(SDNN) Tj
+/F1 6 Tf
+25 0 Td
+(RMSSD) Tj
+/F1 6 Tf
+25 0 Td
+(PNN50) Tj
+/F1 6 Tf
+25 0 Td
+(PNN20) Tj
+/F1 6 Tf
+25 0 Td
+(POW) Tj
+/F1 6 Tf
+25 0 Td
+(LF) Tj
+/F1 6 Tf
+25 0 Td
+(HF) Tj
+/F1 6 Tf
+25 0 Td
+(LF\057HF) Tj
+/F1 6 Tf
+25 0 Td
+(LFNU) Tj
+/F1 6 Tf
+25 0 Td
+(HFNU) Tj
+/F1 6 Tf
+25 0 Td
+(SD1) Tj
+/F1 6 Tf
+25 0 Td
+(SD2) Tj
+/F1 6 Tf
+25 0 Td
+(SD2\057SD1) Tj
+/F1 6 Tf
+25 0 Td
+(DFA1) Tj
+/F1 6 Tf
+25 0 Td
+(DFA2) Tj
+/F1 6 Tf
+25 0 Td
+(BPSYS) Tj
+/F1 6 Tf
+25 0 Td
+(BPDIA) Tj
+ET
+270 560 100 25 re
+270 540 m
+470 540 l
+470 540 m
+470 440 l
+470 440 m
+270 440 l
+270 440 m
+270 540 l
+330 540 m
+330 440 l
+270 520 m
+470 520 l
+270 500 m
+470 500 l
+270 480 m
+470 480 l
+270 460 m
+470 460 l
+S
+0 w
+60 400 m
+60 240 l
+60 320 m
+550 320 l
+60 400 m
+55 400 l
+60 380 m
+55 380 l
+60 360 m
+55 360 l
+60 340 m
+55 340 l
+60 320 m
+55 320 l
+60 300 m
+55 300 l
+60 280 m
+55 280 l
+60 260 m
+55 260 l
+60 240 m
+55 240 l
+S
+0 0 0 RG
+0.75 0 0 rg
+75 320 20 52 re
+B
+0 0.75 0 rg
+100 320 20 -16 re
+B
+0.75 0 0 rg
+125 320 20 16 re
+B
+0.75 0 0 rg
+150 320 20 28 re
+B
+0.75 0 0 rg
+175 320 20 28 re
+B
+0 0.75 0 rg
+200 320 20 -12 re
+B
+0.75 0 0 rg
+225 320 20 20 re
+B
+0.75 0 0 rg
+250 320 20 8 re
+B
+0.75 0 0 rg
+275 320 20 24 re
+B
+0.75 0 0 rg
+300 320 20 44 re
+B
+0.75 0 0 rg
+325 320 20 44 re
+B
+0.75 0 0 rg
+350 320 20 16 re
+B
+0 0.75 0 rg
+375 320 20 -20 re
+B
+0.75 0 0 rg
+400 320 20 24 re
+B
+0.75 0 0 rg
+425 320 20 20 re
+B
+0.75 0 0 rg
+450 320 20 28 re
+B
+0 0.75 0 rg
+475 320 20 -40 re
+B
+0 0.75 0 rg
+500 320 20 -40 re
+B
+0 0 0.8 rg
+75 320 20 52 re
+225 320 20 20 re
+300 320 20 44 re
+325 320 20 44 re
+375 320 20 -20 re
+400 320 20 24 re
+425 320 20 20 re
+450 320 20 28 re
+B
+
+endstream
+endobj
+6 0 obj
+3720
+endobj
+7 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Roman
+/Subtype /Type1
+/Encoding /StandardEncoding
+>>
+endobj
+8 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Bold
+/Subtype /Type1
+/Encoding /StandardEncoding
+>>
+endobj
+9 0 obj
+<<
+/Type /Page
+/MediaBox [ 0 0 595 841 ]
+/Contents 10 0 R
+/Resources <<
+/ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
+/Font <<
+/F1 7 0 R
+/F2 8 0 R
+>>
+>>
+/Parent 2 0 R
+>>
+endobj
+10 0 obj
+<<
+/Length 11 0 R
+>>
+stream
+0.5 w
+25 25 545 791 re
+S
+/F1 24 Tf
+BT
+/F2 18 Tf
+196.71201 771 Td
+(Heart Rate Variability) Tj
+/F2 10 Tf
+/F1 12 Tf
+13.392 TL
+-169.71201 -18.38397 Td
+0.55051 Tc
+(Heart rate is controlled by the two branches of the autonomic \050involuntary\051 nervous system. The) '
+0.32314 Tc
+(sympathetic nervous system \050SNS\051 and the parasympathetic nervous system \050PNS\051. The sympathetic) '
+0.40179 Tc
+(nervous system \050SNS\051 releases the hormones \050catecholamines - epinephrine and norepinephrine\051 to) '
+0.00131 Tc
+(accelerate the heart rate. The parasympathetic nervous system \050PNS\051 releases the hormone acetylcholine to) '
+0.44736 Tc
+(slow the heart rate. The dynamic mediation of SNS and PNS on cardiovascular system results into) '
+0 Tc
+(continuous change in beat to beat intervals. This leads to Heart Rate Variability \050HRV\051.) '
+/F1 12 Tf
+0 -19.64783 Td
+0.18638 Tc
+(The analysis of the variations in beat to beat intervals provide insights into the mediation performed by) '
+0.37707 Tc
+(sympathetic and parasympathetic branches of the autonomic nervous system. The most widely used) '
+0 Tc
+(methods for analysis of heart rate variability are,) '
+/F1 12 Tf
+104.71201 -21.43994 Td
+(\050i\051Time Domain methods,) Tj
+/F1 12 Tf
+0 -15 Td
+(\050ii\051Frequency Domain methods and) Tj
+/F1 12 Tf
+0 -15 Td
+(\050iii\051Non-linear methods.) Tj
+/F2 12 Tf
+-85 -20 Td
+(Time Domain Parameters :) Tj
+0 -360 Td
+(Frequency Domain Parameters :) Tj
+/F1 11 Tf
+8.28799 314 Td
+(Name) Tj
+365 0 Td
+(Normative Range) Tj
+-100 0 Td
+(Test Values) Tj
+/F1 11 Tf
+-265 -35 Td
+(Mean RR) Tj
+365 0 Td
+(785-1160 ms) Tj
+-100 0 Td
+(778.855) Tj
+/F1 11 Tf
+-265 -35 Td
+(SDNN) Tj
+365 0 Td
+(27-67.6 ms) Tj
+-100 0 Td
+(60.1153) Tj
+/F1 11 Tf
+-265 -35 Td
+(RMSSD) Tj
+365 0 Td
+(15.7-52.3 ms) Tj
+-100 0 Td
+(35.3296) Tj
+/F1 11 Tf
+-265 -35 Td
+(NN50) Tj
+365 0 Td
+(-) Tj
+-100 0 Td
+(38) Tj
+/F1 11 Tf
+-265 -35 Td
+(NN20) Tj
+365 0 Td
+(-) Tj
+-100 0 Td
+(169) Tj
+/F1 11 Tf
+-265 -35 Td
+(pNN50) Tj
+365 0 Td
+(1-32 \045) Tj
+-100 0 Td
+(10.2426) Tj
+/F1 11 Tf
+-265 -35 Td
+(pNN20) Tj
+365 0 Td
+(30-74 \045) Tj
+-100 0 Td
+(45.5526) Tj
+/F1 11 Tf
+-147.375 258.51401 Td
+(Short Explanation) '
+/F1 11 Tf
+-7.634 -20.608 Td
+(Mean of RR intervals) '
+/F1 11 Tf
+-28.875 -20.608 Td
+(Standard deviation of RR intervals) '
+/F1 11 Tf
+-3.19551 -13.608 Td
+(Root mean square of successive NN) '
+36.97101 0 Td
+(interval differences) '
+/F1 11 Tf
+-28.41301 -11.216 Td
+(Number of pairs of adjacent NN) '
+-12.23199 0 Td
+(intervals differing by more than 50ms) '
+/F1 11 Tf
+12.23199 -7.216 Td
+(Number of pairs of adjacent NN) '
+-12.23199 0 Td
+(intervals differing by more than 20ms) '
+/F1 11 Tf
+12.21552 -8.216 Td
+(NN50 count divided by the total) '
+11.76999 0 Td
+(number of all NN intervals) '
+/F1 11 Tf
+-11.76999 -8.216 Td
+(NN20 count divided by the total) '
+11.76999 0 Td
+(number of all NN intervals) '
+/F1 11 Tf
+-98.23199 -104.73001 Td
+(Name) Tj
+365 0 Td
+(Normative Range) Tj
+-100 0 Td
+(Test Values) Tj
+/F1 11 Tf
+-265 -30 Td
+(VLF Power) Tj
+365 0 Td
+(-) Tj
+-100 0 Td
+(1465.12) Tj
+/F1 11 Tf
+-265 -30 Td
+(LF Power) Tj
+365 0 Td
+(193-1009 ms2) Tj
+-100 0 Td
+(1813.74) Tj
+/F1 11 Tf
+-147.375 73.51399 Td
+(Short Explanation) '
+/F1 11 Tf
+-29.46899 -16.60799 Td
+(Power in VLF range\0500-0.04Hz\051) '
+/F1 11 Tf
+-5.65402 -16.608 Td
+(Power in LF range \0500.04-0.15 Hz\051) '
+ET
+50 520 m
+50 240 l
+50 520 m
+540 520 l
+540 520 m
+540 240 l
+540 240 m
+50 240 l
+125 520 m
+125 240 l
+300 520 m
+300 240 l
+400 520 m
+400 240 l
+50 480 m
+540 480 l
+50 450 m
+540 450 l
+50 420 m
+540 420 l
+50 380 m
+540 380 l
+50 340 m
+540 340 l
+50 310 m
+540 310 l
+50 270 m
+540 270 l
+50 160 m
+50 70 l
+50 160 m
+540 160 l
+540 160 m
+540 70 l
+540 70 m
+50 70 l
+125 160 m
+125 70 l
+300 160 m
+300 70 l
+400 160 m
+400 70 l
+50 130 m
+540 130 l
+50 100 m
+540 100 l
+S
+
+endstream
+endobj
+11 0 obj
+3732
+endobj
+12 0 obj
+<<
+/Type /Page
+/MediaBox [ 0 0 595 841 ]
+/Contents 13 0 R
+/Resources <<
+/ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
+/Font <<
+/F1 7 0 R
+/F2 8 0 R
+>>
+>>
+/Parent 2 0 R
+>>
+endobj
+13 0 obj
+<<
+/Length 14 0 R
+>>
+stream
+0.5 w
+25 25 545 791 re
+S
+/F1 12 Tf
+BT
+/F2 12 Tf
+46.71201 662 Td
+(Non linear Parameters :) Tj
+/F1 8 Tf
+0 -231 Td
+(*The Normative ranges given in the chart are based on the values given in reference 1 and 2.) Tj
+/F2 12 Tf
+0 -240 Td
+(REFERENCES :) Tj
+/F1 11 Tf
+12.276 TL
+28.28799 -13.60201 Td
+0.49122 Tc
+(\0501\051 Andreas Voss, Rico Schroeder, Andreas Heitmann, Annette Peters, Siegfried Perz.) '
+0 Tc
+(Short-Term Heart Rate Variability - Influence of Gender and Age in Healthy Subjects.) '
+0 -5.448 Td
+0.65687 Tc
+(\0502\051 David Nunan, Ph.D.; Gavin R. H. Sandercock, Ph.D.; David A. Brodie, Ph.D. A) '
+0.22731 Tc
+(Quantitative Systematic Review of Normal Values for Short term Heart Rate Variability in) '
+0 Tc
+(Healthy Adults.) '
+/F1 11 Tf
+-20 674.42999 Td
+(HF Power) Tj
+365 0 Td
+(82-3630 ms2) Tj
+-100 0 Td
+(434.364) Tj
+/F1 11 Tf
+-265 -25 Td
+(LF\057HF) Tj
+365 0 Td
+(1.1-11.6) Tj
+-100 0 Td
+(4.176) Tj
+/F1 11 Tf
+-265 -25 Td
+(LF norm) Tj
+365 0 Td
+(39-77 n.u.) Tj
+-100 0 Td
+(80.679) Tj
+/F1 11 Tf
+-265 -25 Td
+(HF norm) Tj
+365 0 Td
+(23-61 n.u.) Tj
+-100 0 Td
+(19.321) Tj
+/F1 11 Tf
+-180.35851 87.39801 Td
+(Power in HF range \0500.15-0.4 Hz\051) '
+/F1 11 Tf
+14.3495 -12.724 Td
+(Ratio LF power\057HF power) '
+/F1 11 Tf
+-6.875 -12.724 Td
+(LF power in normalized units) '
+/F1 11 Tf
+-0.6105 -12.724 Td
+(HF power in normalized units) '
+/F1 11 Tf
+-91.50549 -95.12201 Td
+(Name) Tj
+365 0 Td
+(Normative Range) Tj
+-100 0 Td
+(Test Values) Tj
+/F1 11 Tf
+-265 -33 Td
+(Poincare SD1) Tj
+365 0 Td
+(11.1-37.1 ms) Tj
+-100 0 Td
+(24.9467) Tj
+/F1 11 Tf
+-265 -33 Td
+(Poincare SD2) Tj
+365 0 Td
+(35.5-83.9 ms) Tj
+-100 0 Td
+(81.1538) Tj
+/F1 11 Tf
+-265 -33 Td
+(SD1\057SD2) Tj
+365 0 Td
+(0.27-0.53) Tj
+-100 0 Td
+(3.25309) Tj
+/F1 11 Tf
+-265 -33 Td
+(DFA alpha1) Tj
+365 0 Td
+(0.76-1.2) Tj
+-100 0 Td
+(1) Tj
+/F1 11 Tf
+-265 -33 Td
+(DFA alpha2) Tj
+365 0 Td
+(0.65-1.09) Tj
+-100 0 Td
+(1) Tj
+/F1 11 Tf
+-147.375 177.39801 Td
+(Short Explanation) '
+/F1 11 Tf
+-37.11951 -20.724 Td
+(Poincare plot short term variability) '
+/F1 11 Tf
+1.22101 -20.724 Td
+(Poincare plot long term variability) '
+/F1 11 Tf
+35.1395 -20.724 Td
+(Poincare plot ratio) '
+/F1 11 Tf
+-23.52899 -20.724 Td
+(Short-term fluctuations slope) '
+/F1 11 Tf
+0.308 -20.724 Td
+(Long-term fluctuations slope) '
+/F2 18 Tf
+48.067 -59.12201 Td
+(Blood Pressure \050BP\051) Tj
+/F1 14 Tf
+-169.71201 -11.29599 Td
+0.19158 Tc
+(Blood Pressure is the pressure of circulating blood on the walls of the blood vessels. It is) '
+0 Tc
+(expressed as Systolic and diastolic.) '
+/F1 11 Tf
+28 -55.15201 Td
+(Name) Tj
+365 0 Td
+(Normative Range) Tj
+-100 0 Td
+(Test Values) Tj
+/F1 11 Tf
+-265 -28 Td
+(BP Systolic) Tj
+365 0 Td
+(80-120 mmHg) Tj
+-100 0 Td
+/F1 11 Tf
+-265 -28 Td
+(BP Diastolic) Tj
+365 0 Td
+(60-80 mmHg) Tj
+-100 0 Td
+/F1 11 Tf
+-147.375 69.39801 Td
+(Short Explanation) '
+/F1 11 Tf
+-41.701 -9.724 Td
+(Maximum blood pressure during one) '
+60.0435 0 Td
+(heart beat) '
+/F1 11 Tf
+-59.13049 2.552 Td
+(Minimum blood pressure during one) '
+59.13049 0 Td
+(heart beat) '
+ET
+50 800 m
+50 700 l
+50 800 m
+540 800 l
+540 800 m
+540 700 l
+540 700 m
+50 700 l
+125 800 m
+125 700 l
+300 800 m
+300 700 l
+400 800 m
+400 700 l
+50 775 m
+540 775 l
+50 750 m
+540 750 l
+50 725 m
+540 725 l
+50 640 m
+50 440 l
+50 640 m
+540 640 l
+540 640 m
+540 440 l
+540 440 m
+50 440 l
+125 640 m
+125 440 l
+300 640 m
+300 440 l
+400 640 m
+400 440 l
+50 600 m
+540 600 l
+50 565 m
+540 565 l
+50 535 m
+540 535 l
+50 505 m
+540 505 l
+50 475 m
+540 475 l
+50 320 m
+50 240 l
+50 320 m
+540 320 l
+540 320 m
+540 240 l
+540 240 m
+50 240 l
+125 320 m
+125 240 l
+300 320 m
+300 240 l
+400 320 m
+400 240 l
+50 292 m
+540 292 l
+50 266 m
+540 266 l
+S
+
+endstream
+endobj
+14 0 obj
+3556
+endobj
+xref
+0 15
+0000000000 65535 f
+0000000015 00000 n
+0000000064 00000 n
+0000000136 00000 n
+0000000200 00000 n
+0000000386 00000 n
+0000004160 00000 n
+0000004180 00000 n
+0000004280 00000 n
+0000004379 00000 n
+0000004566 00000 n
+0000008354 00000 n
+0000008375 00000 n
+0000008563 00000 n
+0000012175 00000 n
+trailer
+<<
+/Root 1 0 R
+/Info 3 0 R
+/Size 15
+>>
+startxref
+12196
+%%EOF

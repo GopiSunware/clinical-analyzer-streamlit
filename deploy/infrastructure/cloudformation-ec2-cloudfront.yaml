@@ -1,0 +1,515 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'SmartBuild SPA - EC2 with CloudFront Distribution (us-east-1)'
+
+Parameters:
+  KeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: EC2 Key Pair for SSH access
+    ConstraintDescription: Must be an existing EC2 KeyPair
+  
+  InstanceType:
+    Type: String
+    Default: t3.medium
+    AllowedValues:
+      - t3.small
+      - t3.medium
+      - t3a.medium
+      - t3.large
+    Description: EC2 instance type
+
+  GitRepoUrl:
+    Type: String
+    Default: ''
+    Description: Git repository URL for the application (optional)
+
+Mappings:
+  RegionMap:
+    us-east-1:
+      AMI: ami-0c02fb55731490381  # Ubuntu 22.04 LTS
+
+Resources:
+  # VPC Configuration
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: SmartBuild-VPC
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: SmartBuild-PublicSubnet
+
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select [1, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: SmartBuild-PrivateSubnet
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: SmartBuild-IGW
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: SmartBuild-PublicRT
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  SubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  # Security Groups
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Application Load Balancer
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: SmartBuild-ALB-SG
+
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for EC2 instance
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0  # Restrict this to your IP in production
+        - IpProtocol: tcp
+          FromPort: 8501
+          ToPort: 8501
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+      Tags:
+        - Key: Name
+          Value: SmartBuild-EC2-SG
+
+  # IAM Role for EC2
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+      Policies:
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt SessionStorage.Arn
+                  - !Sub '${SessionStorage.Arn}/*'
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref EC2Role
+
+  # S3 Bucket for Sessions
+  SessionStorage:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'smartbuild-sessions-${AWS::AccountId}'
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldSessions
+            Status: Enabled
+            ExpirationInDays: 30
+
+  # EC2 Instance
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyPairName
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      SecurityGroupIds:
+        - !Ref EC2SecurityGroup
+      SubnetId: !Ref PublicSubnet
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 20
+            VolumeType: gp3
+            DeleteOnTermination: true
+      Tags:
+        - Key: Name
+          Value: SmartBuild-EC2
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+          
+          # Log output
+          exec > /var/log/user-data.log 2>&1
+          
+          # Update system
+          apt-get update
+          apt-get upgrade -y
+          
+          # Install dependencies
+          apt-get install -y python3.11 python3.11-venv python3-pip tmux git curl wget nginx
+          
+          # Install AWS CLI
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          apt-get install -y unzip
+          unzip awscliv2.zip
+          ./aws/install
+          
+          # Create app directory
+          mkdir -p /opt/smartbuild
+          cd /opt/smartbuild
+          
+          # Clone repository or create placeholder
+          if [ -n "${GitRepoUrl}" ]; then
+            git clone ${GitRepoUrl} app
+          else
+            mkdir app
+            echo "# SmartBuild SPA" > app/README.md
+          fi
+          
+          # Create Python virtual environment
+          python3.11 -m venv venv
+          source venv/bin/activate
+          
+          # Create requirements.txt if it doesn't exist
+          if [ ! -f app/requirements.txt ]; then
+            cat > app/requirements.txt << 'EOF'
+          streamlit==1.40.2
+          boto3==1.34.146
+          python-dateutil==2.9.0
+          pyyaml==6.0.2
+          requests==2.32.3
+          websocket-client==1.8.0
+          watchdog==6.0.0
+          EOF
+          fi
+          
+          # Install Python packages
+          pip install --upgrade pip
+          pip install -r app/requirements.txt
+          
+          # Configure Nginx
+          cat > /etc/nginx/sites-available/smartbuild << 'NGINX'
+          server {
+              listen 80;
+              server_name _;
+              client_max_body_size 100M;
+              
+              location / {
+                  proxy_pass http://localhost:8501;
+                  proxy_http_version 1.1;
+                  proxy_set_header Upgrade $http_upgrade;
+                  proxy_set_header Connection "upgrade";
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+                  proxy_read_timeout 86400;
+                  proxy_buffering off;
+              }
+              
+              location /_stcore/stream {
+                  proxy_pass http://localhost:8501/_stcore/stream;
+                  proxy_http_version 1.1;
+                  proxy_set_header Upgrade $http_upgrade;
+                  proxy_set_header Connection "upgrade";
+                  proxy_set_header Host $host;
+                  proxy_cache_bypass $http_upgrade;
+                  proxy_read_timeout 86400;
+              }
+          }
+          NGINX
+          
+          ln -sf /etc/nginx/sites-available/smartbuild /etc/nginx/sites-enabled/
+          rm -f /etc/nginx/sites-enabled/default
+          systemctl restart nginx
+          
+          # Create systemd service
+          cat > /etc/systemd/system/smartbuild.service << 'SERVICE'
+          [Unit]
+          Description=SmartBuild SPA
+          After=network.target
+          
+          [Service]
+          Type=simple
+          User=ubuntu
+          WorkingDirectory=/opt/smartbuild/app
+          Environment="PATH=/opt/smartbuild/venv/bin"
+          Environment="AWS_DEFAULT_REGION=us-east-1"
+          Environment="S3_BUCKET=${SessionStorage}"
+          ExecStart=/opt/smartbuild/venv/bin/streamlit run smartbuild_spa_middleware.py --server.port 8501 --server.address 127.0.0.1
+          Restart=always
+          RestartSec=10
+          
+          [Install]
+          WantedBy=multi-user.target
+          SERVICE
+          
+          # Start service
+          systemctl daemon-reload
+          systemctl enable smartbuild
+          systemctl start smartbuild
+          
+          # Create CloudWatch config
+          cat > /opt/aws/amazon-cloudwatch-agent/etc/cloudwatch-config.json << 'CW'
+          {
+            "logs": {
+              "logs_collected": {
+                "files": {
+                  "collect_list": [
+                    {
+                      "file_path": "/var/log/nginx/access.log",
+                      "log_group_name": "/aws/ec2/smartbuild/nginx",
+                      "log_stream_name": "{instance_id}/access"
+                    },
+                    {
+                      "file_path": "/var/log/user-data.log",
+                      "log_group_name": "/aws/ec2/smartbuild/setup",
+                      "log_stream_name": "{instance_id}"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+          CW
+
+  # Application Load Balancer
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: SmartBuild-ALB
+      Type: application
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref ALBSecurityGroup
+      Subnets:
+        - !Ref PublicSubnet
+        - !Ref PrivateSubnet
+      Tags:
+        - Key: Name
+          Value: SmartBuild-ALB
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: SmartBuild-TG
+      Port: 80
+      Protocol: HTTP
+      VpcId: !Ref VPC
+      TargetType: instance
+      Targets:
+        - Id: !Ref EC2Instance
+          Port: 80
+      HealthCheckEnabled: true
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      Matcher:
+        HttpCode: 200
+
+  HTTPListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+  # CloudFront Distribution
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: SmartBuild SPA CloudFront Distribution
+        DefaultRootObject: ''
+        Origins:
+          - Id: ALBOrigin
+            DomainName: !GetAtt LoadBalancer.DNSName
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: http-only
+              OriginReadTimeout: 60
+              OriginKeepaliveTimeout: 5
+        DefaultCacheBehavior:
+          TargetOriginId: ALBOrigin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+            - PUT
+            - POST
+            - PATCH
+            - DELETE
+          CachedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          Compress: true
+          ForwardedValues:
+            QueryString: true
+            Headers:
+              - Host
+              - Origin
+              - Referer
+              - User-Agent
+              - CloudFront-Forwarded-Proto
+              - CloudFront-Is-Desktop-Viewer
+              - CloudFront-Is-Mobile-Viewer
+              - CloudFront-Is-Tablet-Viewer
+            Cookies:
+              Forward: all
+          MinTTL: 0
+          DefaultTTL: 0
+          MaxTTL: 0
+        CacheBehaviors:
+          - PathPattern: /_stcore/*
+            TargetOriginId: ALBOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+              - PUT
+              - POST
+              - PATCH
+              - DELETE
+            ForwardedValues:
+              QueryString: true
+              Headers:
+                - '*'
+              Cookies:
+                Forward: all
+            MinTTL: 0
+            DefaultTTL: 0
+            MaxTTL: 0
+          - PathPattern: /static/*
+            TargetOriginId: ALBOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+            ForwardedValues:
+              QueryString: false
+              Headers:
+                - Origin
+              Cookies:
+                Forward: none
+            MinTTL: 86400
+            DefaultTTL: 604800
+            MaxTTL: 31536000
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+        HttpVersion: http2
+
+Outputs:
+  CloudFrontURL:
+    Description: CloudFront distribution URL for public access
+    Value: !Sub 'https://${CloudFrontDistribution.DomainName}'
+    Export:
+      Name: SmartBuild-CloudFront-URL
+
+  ALBEndpoint:
+    Description: Application Load Balancer DNS (internal)
+    Value: !Sub 'http://${LoadBalancer.DNSName}'
+    Export:
+      Name: SmartBuild-ALB-DNS
+
+  EC2PublicIP:
+    Description: EC2 instance public IP for SSH access
+    Value: !GetAtt EC2Instance.PublicIp
+    Export:
+      Name: SmartBuild-EC2-IP
+
+  SSHCommand:
+    Description: SSH connection command
+    Value: !Sub 'ssh -i ${KeyPairName}.pem ubuntu@${EC2Instance.PublicIp}'
+
+  S3Bucket:
+    Description: S3 bucket for session storage
+    Value: !Ref SessionStorage
+    Export:
+      Name: SmartBuild-S3-Bucket

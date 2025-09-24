@@ -1,0 +1,178 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'SmartBuild SPA - Minimal EC2 + CloudFront (us-east-1)'
+
+Parameters:
+  KeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: EC2 Key Pair for SSH access
+    ConstraintDescription: Must be an existing EC2 KeyPair
+
+Mappings:
+  RegionMap:
+    us-east-1:
+      AMI: ami-05ec1e5f7cfe5ef59  # Ubuntu 22.04 LTS
+
+Resources:
+  # Simple Security Group
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH and HTTP
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: SmartBuild-SG
+
+  # EC2 Instance
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: t3.medium
+      KeyName: !Ref KeyPairName
+      SecurityGroups:
+        - !Ref EC2SecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 20
+            VolumeType: gp3
+            DeleteOnTermination: true
+      Tags:
+        - Key: Name
+          Value: SmartBuild-EC2
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          apt-get update
+          apt-get install -y python3.11 python3.11-venv python3-pip tmux nginx git
+          
+          # Create app directory
+          mkdir -p /opt/smartbuild
+          cd /opt/smartbuild
+          
+          # Create virtual environment
+          python3.11 -m venv venv
+          source venv/bin/activate
+          
+          # Install Streamlit
+          pip install streamlit boto3
+          
+          # Create simple test app
+          cat > app.py << 'EOF'
+          import streamlit as st
+          st.title("SmartBuild SPA")
+          st.write("Application is running!")
+          st.info("Upload your actual application files via SCP")
+          EOF
+          
+          # Configure Nginx
+          cat > /etc/nginx/sites-available/default << 'NGINX'
+          server {
+              listen 80 default_server;
+              listen [::]:80 default_server;
+              
+              location / {
+                  proxy_pass http://127.0.0.1:8501;
+                  proxy_http_version 1.1;
+                  proxy_set_header Upgrade $http_upgrade;
+                  proxy_set_header Connection "upgrade";
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+                  proxy_read_timeout 86400;
+                  proxy_buffering off;
+              }
+              
+              location /_stcore/stream {
+                  proxy_pass http://127.0.0.1:8501/_stcore/stream;
+                  proxy_http_version 1.1;
+                  proxy_set_header Upgrade $http_upgrade;
+                  proxy_set_header Connection "upgrade";
+                  proxy_set_header Host $host;
+                  proxy_read_timeout 86400;
+              }
+          }
+          NGINX
+          
+          systemctl restart nginx
+          
+          # Create systemd service
+          cat > /etc/systemd/system/smartbuild.service << 'SERVICE'
+          [Unit]
+          Description=SmartBuild SPA
+          After=network.target
+          
+          [Service]
+          Type=simple
+          WorkingDirectory=/opt/smartbuild
+          ExecStart=/opt/smartbuild/venv/bin/streamlit run app.py --server.port 8501 --server.address 127.0.0.1
+          Restart=always
+          User=ubuntu
+          
+          [Install]
+          WantedBy=multi-user.target
+          SERVICE
+          
+          systemctl daemon-reload
+          systemctl enable smartbuild
+          systemctl start smartbuild
+
+  # CloudFront Distribution
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: SmartBuild SPA
+        Origins:
+          - Id: EC2Origin
+            DomainName: !GetAtt EC2Instance.PublicDnsName
+            CustomOriginConfig:
+              HTTPPort: 80
+              OriginProtocolPolicy: http-only
+        DefaultCacheBehavior:
+          TargetOriginId: EC2Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+            - PUT
+            - POST
+            - PATCH
+            - DELETE
+          ForwardedValues:
+            QueryString: true
+            Headers:
+              - '*'
+            Cookies:
+              Forward: all
+          MinTTL: 0
+          DefaultTTL: 0
+          MaxTTL: 0
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+
+Outputs:
+  CloudFrontURL:
+    Description: CloudFront URL (HTTPS)
+    Value: !Sub 'https://${CloudFrontDistribution.DomainName}'
+  
+  EC2PublicIP:
+    Description: EC2 Public IP for SSH
+    Value: !GetAtt EC2Instance.PublicIp
+  
+  SSHCommand:
+    Description: SSH Command
+    Value: !Sub 'ssh -i ${KeyPairName}.pem ubuntu@${EC2Instance.PublicIp}'

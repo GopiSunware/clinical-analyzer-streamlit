@@ -1,0 +1,32 @@
+# Clinical Analyzer - Updated Dependencies for Streamlit 1.46.1
+# Core framework
+streamlit==1.46.1
+
+# AI and API
+openai==1.93.0
+google-cloud-vision==3.4.4
+google-generativeai==0.8.3
+
+# Data processing
+pandas==2.3.0
+numpy==1.26.4
+
+# Document processing
+python-docx==1.2.0
+openpyxl==3.1.5
+pymupdf==1.26.3
+
+# Image OCR
+pytesseract==0.3.13
+
+# Image processing
+Pillow==10.1.0
+
+# Utilities
+python-dotenv==1.0.0
+fuzzywuzzy==0.18.0
+python-Levenshtein==0.23.0
+
+# Additional dependencies that may be needed
+requests==2.32.4
+lxml==6.0.0 
