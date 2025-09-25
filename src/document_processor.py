@@ -19,27 +19,32 @@ class DocumentProcessor:
                  google_vision_key_path: str = "key.json", **kwargs):
         """Initialize the document processor with unified AI client and optional Google Vision API"""
         
-        # Set defaults based on provider
-        if ai_provider.lower() == "gemini":
-            default_model = model or "gemini-1.5-flash"
-            api_key = api_key or os.getenv('GEMINI_API_KEY')
-        else:  # OpenAI
-            default_model = model or "gpt-3.5-turbo"
-            api_key = api_key or os.getenv('OPENAI_API_KEY')
+        normalized_provider = ai_provider.lower()
+        self.ai_client = None
+        self.ai_provider = normalized_provider
         
-        # Initialize unified AI client
-        try:
-            self.ai_client = UnifiedAIClient(
-                provider=ai_provider,
-                api_key=api_key,
-                model=default_model,
-                **kwargs
-            )
-            self.ai_provider = ai_provider
-            self.model = default_model
-        except Exception as e:
-            print(f"Error initializing AI client: {e}")
-            raise
+        if normalized_provider == "claude_subagent":
+            # Sub-agent mode skips API client – downstream methods will fall back to regex-only processing.
+            self.model = "claude-subagent"
+        else:
+            if normalized_provider == "gemini":
+                default_model = model or "gemini-1.5-flash"
+                api_key = api_key or os.getenv('GEMINI_API_KEY')
+            else:  # OpenAI (default)
+                default_model = model or "gpt-3.5-turbo"
+                api_key = api_key or os.getenv('OPENAI_API_KEY')
+            
+            try:
+                self.ai_client = UnifiedAIClient(
+                    provider=normalized_provider,
+                    api_key=api_key,
+                    model=default_model,
+                    **kwargs
+                )
+                self.model = default_model
+            except Exception as e:
+                print(f"Error initializing AI client: {e}")
+                raise
         
         # Initialize Google Vision API
         if os.path.exists(google_vision_key_path):
@@ -52,7 +57,7 @@ class DocumentProcessor:
     def extract_patient_info_from_text(self, text: str, use_ai: bool = False) -> Dict[str, str]:
         """Extract patient name and ID from text using AI or regex fallback"""
         # Skip AI extraction during initial ingestion to prevent hanging
-        if not use_ai:
+        if not use_ai or self.ai_client is None:
             return self._extract_patient_info_regex(text)
             
         try:
@@ -410,6 +415,8 @@ class DocumentProcessor:
     def analyze_image_with_ai_vision(self, image_path: str, patient_name: str = "", 
                                    patient_id: str = "", clinical_context: str = "") -> str:
         """Analyze medical image using unified AI vision capabilities"""
+        if self.ai_client is None:
+            return f"Vision analysis not available with current AI configuration for patient {patient_name or 'N/A'}"
         try:
             # Determine image category
             image_category = self._get_image_category(image_path)
@@ -510,7 +517,7 @@ Note: This analysis was generated using {self.ai_provider.upper()} vision techno
             image_category = self._get_image_category(image_path)
             
             # Use AI to analyze the transcription for medical content
-            if transcription and transcription != "No text detected in image":
+            if self.ai_client and transcription and transcription != "No text detected in image":
                 prompt = f"""
                 Analyze this medical image transcription and extract relevant information:
                 
@@ -563,7 +570,7 @@ Note: This analysis was generated using {self.ai_provider.upper()} vision techno
                     'transcription': transcription,
                     'category': image_category,
                     'analysis': {},
-                    'metadata': {'source': image_path, 'processed_with_ai': False}
+                    'metadata': {'source': image_path, 'processed_with_ai': self.ai_client is not None}
                 }
         
         except Exception as e:
@@ -633,6 +640,8 @@ Note: This analysis was generated using {self.ai_provider.upper()} vision techno
     
     def enhance_text_with_ai(self, text: str, file_type: str = "document") -> str:
         """Enhance and structure text using AI for better searchability"""
+        if self.ai_client is None:
+            return text
         try:
             prompt = f"""
             Please analyze and enhance this medical {file_type} text for better organization and searchability.
@@ -692,6 +701,15 @@ Note: This analysis was generated using {self.ai_provider.upper()} vision techno
     def enhance_image_analysis_with_patient_context(self, transcription: str, image_category: str, 
                                                    patient_name: str, patient_id: str, clinical_context: str = "") -> str:
         """Enhance image transcription with known patient context and clinical information"""
+        if self.ai_client is None:
+            fallback_transcription = f"PATIENT: {patient_name} (ID: {patient_id})\n"
+            fallback_transcription += f"IMAGE TYPE: {image_category}\n"
+            fallback_transcription += "=" * 50 + "\n\n"
+            fallback_transcription += f"Image transcription: {transcription}\n\n"
+            if clinical_context:
+                fallback_transcription += f"Clinical Context: {clinical_context}\n\n"
+            fallback_transcription += "Note: AI enhancement unavailable with current configuration."
+            return fallback_transcription
         try:
             prompt = f"""
             You are analyzing a medical image for a known patient. Provide a comprehensive analysis that combines:

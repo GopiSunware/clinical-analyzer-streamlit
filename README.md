@@ -33,6 +33,15 @@ Place your Google Vision API key file as `key.json` in the root directory.
 streamlit run app.py
 ```
 
+### Claude Sub-agent Mode (No External API Keys)
+
+If you prefer to route questions through the locally authenticated Claude CLI instead of OpenAI/Gemini:
+
+1. Install and authenticate the CLI once: `claude login`
+2. Set `AI_PROVIDER=claude_subagent` in your environment (see `env_example.txt`)
+3. Optional: override `CLAUDE_SUBAGENT_MODEL` if you need a different Claude sub-agent
+4. Launch the app normally; responses will be generated via Claude sub-agents and persisted under `subagent_sessions/`
+
 ## 📁 Data Organization
 
 The system is **completely flexible** with folder structure! Simply place your files anywhere within the `dataset` folder:

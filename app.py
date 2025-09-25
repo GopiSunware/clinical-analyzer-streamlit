@@ -657,11 +657,14 @@ def initialize_system():
         # Get provider-specific configuration
         if ai_provider == 'gemini':
             model = os.getenv('GEMINI_MODEL', 'gemini-1.5-flash')
-            # Check if key.json exists for Gemini
             if not os.path.exists('key.json'):
                 st.error("⚠️ Google Cloud service account key file (key.json) not found. This is required for Gemini AI.")
                 st.stop()
             api_key = None  # Gemini uses service account key file
+        elif ai_provider == 'claude_subagent':
+            model = os.getenv('CLAUDE_SUBAGENT_MODEL', 'claude-opus-4-1-20250805')
+            api_key = None
+            st.info("🛠️ Using Claude sub-agent mode via local `claude` CLI. Run `claude login` on this host if responses fail.")
         else:  # OpenAI
             model = os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo')
             api_key = os.getenv('OPENAI_API_KEY')
@@ -670,7 +673,10 @@ def initialize_system():
                 st.stop()
         
         # Display configuration for debugging
-        provider_emoji = "🧠" if ai_provider == "gemini" else "🤖"
+        provider_emoji = {
+            'gemini': '🧠',
+            'claude_subagent': '🛠️'
+        }.get(ai_provider, '🤖')
         st.info(f"{provider_emoji} Using {ai_provider.upper()}: {model} | Temperature: {temperature} | Max tokens: {max_tokens}")
         
         # Initialize components with unified AI client

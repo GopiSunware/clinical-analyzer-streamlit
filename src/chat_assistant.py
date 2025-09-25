@@ -4,6 +4,7 @@ from fuzzywuzzy import fuzz
 from typing import List, Dict, Any, Optional
 from .database_manager import DatabaseManager
 from .ai_client import UnifiedAIClient
+from .claude_subagent import ClaudeSubagentClient, SubagentResult
 
 class ChatAssistant:
     def __init__(self, ai_provider: str = "openai", api_key: str = None, model: str = None, 
@@ -11,38 +12,47 @@ class ChatAssistant:
                  temperature: float = None, max_tokens: int = None, **kwargs):
         """Initialize the chat assistant with unified AI client"""
         
-        # Set defaults based on provider
-        if ai_provider.lower() == "gemini":
-            default_model = model or "gemini-1.5-flash"
-            api_key = api_key or os.getenv('GEMINI_API_KEY')
-        else:  # OpenAI
-            default_model = model or "gpt-3.5-turbo"
-            api_key = api_key or os.getenv('OPENAI_API_KEY')
+        normalized_provider = ai_provider.lower()
+        self.ai_provider = normalized_provider
         
         # Set temperature and max_tokens from parameters or environment variables
         self.temperature = temperature if temperature is not None else float(os.getenv('TEMPERATURE', '0.3'))
         self.max_tokens = max_tokens if max_tokens is not None else int(os.getenv('MAX_TOKENS', '2000'))
         
-        # Initialize unified AI client
-        try:
-            self.ai_client = UnifiedAIClient(
-                provider=ai_provider,
-                api_key=api_key,
-                model=default_model,
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
-                **kwargs
-            )
-            self.ai_provider = ai_provider
-            self.model = default_model
-        except Exception as e:
-            print(f"Error initializing AI client: {e}")
-            raise
+        self.subagent_client: Optional[ClaudeSubagentClient] = None
+        self.ai_client: Optional[UnifiedAIClient] = None
+        
+        if normalized_provider == "claude_subagent":
+            # Claude sub-agent mode uses the local CLI, no API client required
+            self.model = "claude-subagent"
+            self.subagent_client = ClaudeSubagentClient()
+        else:
+            # Set defaults based on API provider
+            if normalized_provider == "gemini":
+                default_model = model or "gemini-1.5-flash"
+                api_key = api_key or os.getenv('GEMINI_API_KEY')
+            else:  # OpenAI (default)
+                default_model = model or "gpt-3.5-turbo"
+                api_key = api_key or os.getenv('OPENAI_API_KEY')
+            
+            try:
+                self.ai_client = UnifiedAIClient(
+                    provider=normalized_provider,
+                    api_key=api_key,
+                    model=default_model,
+                    temperature=self.temperature,
+                    max_tokens=self.max_tokens,
+                    **kwargs
+                )
+                self.model = default_model
+            except Exception as e:
+                print(f"Error initializing AI client: {e}")
+                raise
         
         self.db = database_manager
         self.current_patient_context = None
         
-        print(f"ChatAssistant initialized with provider: {ai_provider}, model: {default_model}, temperature: {self.temperature}, max_tokens: {self.max_tokens}")
+        print(f"ChatAssistant initialized with provider: {self.ai_provider}, model: {self.model}, temperature: {self.temperature}, max_tokens: {self.max_tokens}")
         
     def set_patient_context(self, patient_name: str = None, patient_id: str = None):
         """Set the current patient context for the conversation"""
@@ -129,40 +139,67 @@ MEDICAL DOCUMENTS ({len(patient_data['documents'])} total):
             context += f"\nNo medical imaging results found for {patient_name}.\n"
         
         return context
-    
-    def search_and_prepare_context(self, query: str) -> str:
-        """Search for relevant patients and prepare context based on query"""
-        # Check if this is a database statistics or analysis query
+
+    def _collect_sources_from_patient(self, patient_data: Dict) -> List[str]:
+        """Collect filesystem paths for documents and images tied to a patient."""
+        sources: List[str] = []
+        for doc in patient_data.get('documents', []):
+            source = doc.get('metadata', {}).get('source') or doc.get('file_path')
+            if source and source not in sources:
+                sources.append(source)
+        for img in patient_data.get('images', []):
+            meta = img.get('metadata', {}) if isinstance(img, dict) else {}
+            source = meta.get('source') or img.get('file_path') or img.get('image_path')
+            if source and source not in sources:
+                sources.append(source)
+        return sources
+
+    def search_and_prepare_context_with_sources(self, query: str) -> Dict[str, Any]:
+        """Search for relevant patients and return context string plus file sources."""
+        sources: List[str] = []
+
         if self.is_database_stats_query(query):
-            return self.prepare_database_stats_context()
-        
-        # Try to identify if query is about a specific patient
+            return {
+                'context': self.prepare_database_stats_context(),
+                'sources': sources
+            }
+
         patient_mentioned = self.extract_patient_from_query(query)
-        
+
         if patient_mentioned:
-            # Extract the actual patient name/ID from the dict
             patient_value = patient_mentioned['value']
-            # Search for specific patient
             search_results = self.db.search_patients(patient_value)
             if search_results:
-                # Get full data for the first matching patient
                 patient_data = self.db.get_patient_data(patient_name=search_results[0]['name'])
-                return self.format_patient_data_for_context(patient_data)
-        
-        # If no specific patient mentioned, search across all patients
+                sources.extend(self._collect_sources_from_patient(patient_data))
+                return {
+                    'context': self.format_patient_data_for_context(patient_data),
+                    'sources': sources
+                }
+
         search_results = self.db.search_patients(query)
-        
+
         if search_results:
-            context = "RELEVANT PATIENTS AND INFORMATION:\n\n"
-            for patient in search_results[:5]:  # Increase to 5 results for better analysis
+            context_parts = ["RELEVANT PATIENTS AND INFORMATION:\n"]
+            for patient in search_results[:5]:
                 patient_data = self.db.get_patient_data(patient_name=patient['name'])
-                context += f"--- PATIENT: {patient['name']} ---\n"
-                context += self.format_patient_data_for_context(patient_data)
-                context += "\n" + "="*50 + "\n\n"
-            return context
-        
-        # If no matches found, provide general database context for analysis
-        return self.prepare_database_stats_context()
+                context_parts.append(f"--- PATIENT: {patient['name']} ---")
+                context_parts.append(self.format_patient_data_for_context(patient_data))
+                context_parts.append("\n" + "=" * 50 + "\n")
+                sources.extend(self._collect_sources_from_patient(patient_data))
+            return {
+                'context': "\n".join(context_parts),
+                'sources': sources
+            }
+
+        return {
+            'context': self.prepare_database_stats_context(),
+            'sources': sources
+        }
+
+    def search_and_prepare_context(self, query: str) -> str:
+        result = self.search_and_prepare_context_with_sources(query)
+        return result['context']
     
     def extract_patient_id_from_query(self, query: str) -> Optional[str]:
         """Extract patient ID from query using pattern matching"""
@@ -405,13 +442,17 @@ Medical Data: {content[:800]}{'...' if len(content) > 800 else ''}
                         self.set_patient_context(patient_id=patient_value)
             
             # Prepare context
+            context_sources: List[str] = []
             if self.current_patient_context:
                 # Use current patient context - maintain context for follow-up questions
                 context = self.format_patient_data_for_context(self.current_patient_context)
                 patient_context = self.current_patient_context['patient_info']['name']
+                context_sources = self._collect_sources_from_patient(self.current_patient_context)
             else:
                 # Only search for new context if no patient context is set
-                context = self.search_and_prepare_context(query)
+                context_bundle = self.search_and_prepare_context_with_sources(query)
+                context = context_bundle['context']
+                context_sources = context_bundle['sources']
                 patient_context = None
             
             # Build the prompt
@@ -458,7 +499,7 @@ Medical Data: {content[:800]}{'...' if len(content) > 800 else ''}
     Please provide a comprehensive answer based on the available patient information.
     """
             
-            # Prepare messages for API call
+            # Prepare messages for API call (used by API providers) and provide context for sub-agent mode
             messages = [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
@@ -480,29 +521,48 @@ Medical Data: {content[:800]}{'...' if len(content) > 800 else ''}
                         "mentioned_patient": mentioned_patient,
                         "context_length_chars": len(context),
                         "system_prompt_length": len(system_prompt),
-                        "user_prompt_length": len(user_prompt)
+                        "user_prompt_length": len(user_prompt),
+                        "context_sources": context_sources,
                     }
                 }
             
             # Get AI response using unified client
             try:
-                ai_response = self.ai_client.generate_text(
-                    messages=messages,
-                    temperature=self.temperature,
-                    max_tokens=self.max_tokens
-                )
-                
-                # Add response details to debug info
-                if debug_mode:
-                    debug_info["api_response"] = {
-                        "completion_tokens": ai_response['usage'].get('completion_tokens'),
-                        "prompt_tokens": ai_response['usage'].get('prompt_tokens'),
-                        "total_tokens": ai_response['usage'].get('total_tokens'),
-                        "model": ai_response.get('model', self.model),
-                        "finish_reason": ai_response.get('finish_reason')
-                    }
-                
-                response_text = ai_response['content']
+                if self.ai_provider == "claude_subagent":
+                    subagent_result = self.subagent_client.run_question(
+                        question=query,
+                        context_markdown=user_prompt,
+                        context_sources=context_sources,
+                        session_token=session_id,
+                        patient_hint=patient_context
+                    )
+                    response_text = subagent_result.content
+
+                    if debug_mode:
+                        debug_info["subagent_response"] = {
+                            "job_id": subagent_result.job_id,
+                            "output_path": str(subagent_result.output_path),
+                            "files_created": subagent_result.files_created,
+                            "raw_message_preview": subagent_result.raw_message[:400]
+                        }
+                else:
+                    ai_response = self.ai_client.generate_text(
+                        messages=messages,
+                        temperature=self.temperature,
+                        max_tokens=self.max_tokens
+                    )
+                    
+                    # Add response details to debug info
+                    if debug_mode:
+                        debug_info["api_response"] = {
+                            "completion_tokens": ai_response['usage'].get('completion_tokens'),
+                            "prompt_tokens": ai_response['usage'].get('prompt_tokens'),
+                            "total_tokens": ai_response['usage'].get('total_tokens'),
+                            "model": ai_response.get('model', self.model),
+                            "finish_reason": ai_response.get('finish_reason')
+                        }
+                    
+                    response_text = ai_response['content']
                 
             except Exception as e:
                 print(f"Error generating AI response: {e}")
